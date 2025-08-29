@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { createUser, deleteUser, fetchAllUserByType, fetchOneUser, updateUser } from '../controllers/user.js';
 
-
 const router = Router();
 
 router.get("/:id", fetchOneUser);

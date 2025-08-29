@@ -20,8 +20,6 @@ const UserSchema = new Schema(
         },
         phone: {
             type: Number,
-            required: true,
-            unique: true,
             maxlength: 10
         },
         password: {
@@ -44,9 +42,6 @@ const UserSchema = new Schema(
         timestamps: true,
     }
 );
-
-UserSchema.index({ email: 1 });
-UserSchema.index({ phone: 1 });
 
 const User = mongoose.model("User", UserSchema);
 export default User 
