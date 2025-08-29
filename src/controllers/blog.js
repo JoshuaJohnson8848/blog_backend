@@ -8,7 +8,69 @@ export const fetchOneBlog = async (req, res, next) => {
             throw new Error("Missing required params");
         }
 
-        const blog = await Blog.findById(id).populate({ path: 'author', select: 'fullName' })
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(20, parseInt(req.query.limit) || 5);
+        const skip = (page - 1) * limit;
+
+        const blog = await Blog.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "author",
+                    foreignField: "_id",
+                    as: "author"
+                }
+            },
+            { $unwind: "$author" },
+            {
+                $lookup: {
+                    from: "comments",
+                    localField: "_id",
+                    foreignField: "postId",
+                    as: "comments"
+                }
+            },
+            {
+                $addFields: {
+                    author: "$author.fullName",
+                    totalComments: { $size: "$comments" },
+                    comments: {
+                        $slice: [
+                            {
+                                $map: {
+                                    input: "$comments",
+                                    as: "comment",
+                                    in: {
+                                        _id: "$$comment._id",
+                                        comment: "$$comment.comment",
+                                        createdAt: "$$comment.createdAt",
+                                        updatedAt: "$$comment.updatedAt"
+                                    }
+                                }
+                            },
+                            skip,
+                            limit
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    author: 1,
+                    totalComments: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    comments: 1
+                }
+            }
+        ]);
 
         return res.status(201).json({ message: "Blog fetched successfully", data: blog || {} });
 
@@ -20,8 +82,64 @@ export const fetchOneBlog = async (req, res, next) => {
 
 export const fetchAllBlogs = async (req, res, next) => {
     try {
-        const blogs = await Blog.find().populate({ path: 'author', select: 'fullName' })
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(20, parseInt(req.query.limit) || 5);
+        const skip = (page - 1) * limit;
 
+        const blogs = await Blog.aggregate([
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "author",
+                    foreignField: "_id",
+                    as: "author"
+                }
+            },
+            { $unwind: "$author" },
+            {
+                $lookup: {
+                    from: "comments",
+                    localField: "_id",
+                    foreignField: "postId",
+                    as: "comments"
+                }
+            },
+            {
+                $addFields: {
+                    author: "$author.fullName",
+                    totalComments: { $size: "$comments" },
+                    comments: {
+                        $slice: [
+                            {
+                                $map: {
+                                    input: "$comments",
+                                    as: "comment",
+                                    in: {
+                                        _id: "$$comment._id",
+                                        comment: "$$comment.comment",
+                                        createdAt: "$$comment.createdAt",
+                                        updatedAt: "$$comment.updatedAt"
+                                    }
+                                }
+                            },
+                            skip,
+                            limit
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    title: 1,
+                    content: 1,
+                    author: 1,
+                    totalComments: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    comments: 1
+                }
+            }
+        ]);
         return res.status(201).json({ message: "Blog fetched successfully", data: blogs || [] });
 
     } catch (error) {
