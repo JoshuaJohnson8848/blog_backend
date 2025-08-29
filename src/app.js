@@ -3,6 +3,7 @@ import cors from 'cors'
 import connectDB from './config/dbConfig.js';
 import UserRouter from './routes/user.js'
 import AuthRouter from './routes/auth.js'
+import BlogRouter from './routes/blog.js'
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(cors());
 
 app.use("/api/user", UserRouter);
 app.use("/api/auth", AuthRouter);
+app.use("/api/blog", BlogRouter);
 
 connectDB().then(() => {
         app.listen(process.env.PORT, () => {
