@@ -1,16 +1,14 @@
+import mongoose from "mongoose";
 import Blog from "../models/blog.js";
 
 export const fetchOneBlog = async (req, res, next) => {
     try {
         const { id } = req.params;
+        const { keyword } = req.query;
 
         if (!id) {
             throw new Error("Missing required params");
         }
-
-        const page = Math.max(1, parseInt(req.query.page) || 1);
-        const limit = Math.min(20, parseInt(req.query.limit) || 5);
-        const skip = (page - 1) * limit;
 
         const blog = await Blog.aggregate([
             {
@@ -39,24 +37,20 @@ export const fetchOneBlog = async (req, res, next) => {
                 $addFields: {
                     author: "$author.fullName",
                     totalComments: { $size: "$comments" },
-                    comments: {
-                        $slice: [
-                            {
-                                $map: {
-                                    input: "$comments",
-                                    as: "comment",
-                                    in: {
-                                        _id: "$$comment._id",
-                                        comment: "$$comment.comment",
-                                        createdAt: "$$comment.createdAt",
-                                        updatedAt: "$$comment.updatedAt"
-                                    }
+                    comments: [
+                        {
+                            $map: {
+                                input: "$comments",
+                                as: "comment",
+                                in: {
+                                    _id: "$$comment._id",
+                                    comment: "$$comment.comment",
+                                    createdAt: "$$comment.createdAt",
+                                    updatedAt: "$$comment.updatedAt"
                                 }
-                            },
-                            skip,
-                            limit
-                        ]
-                    }
+                            }
+                        },
+                    ]
                 }
             },
             {
@@ -69,7 +63,7 @@ export const fetchOneBlog = async (req, res, next) => {
                     updatedAt: 1,
                     comments: 1
                 }
-            }
+            },
         ]);
 
         return res.status(201).json({ message: "Blog fetched successfully", data: blog || {} });
@@ -82,9 +76,20 @@ export const fetchOneBlog = async (req, res, next) => {
 
 export const fetchAllBlogs = async (req, res, next) => {
     try {
-        const page = Math.max(1, parseInt(req.query.page) || 1);
-        const limit = Math.min(20, parseInt(req.query.limit) || 5);
+        const { keyword, pageParam, limitParam } = req.query;
+
+        const page = Math.max(1, parseInt(pageParam) || 1);
+        const limit = Math.min(20, parseInt(limitParam) || 5);
         const skip = (page - 1) * limit;
+
+        let matchCondition = {};
+
+        if (keyword) {
+            matchCondition.$or = [
+                { title: { $regex: keyword, $options: 'i' } },
+                { author: { $regex: keyword, $options: 'i' } }
+            ];
+        }
 
         const blogs = await Blog.aggregate([
             {
@@ -138,7 +143,8 @@ export const fetchAllBlogs = async (req, res, next) => {
                     updatedAt: 1,
                     comments: 1
                 }
-            }
+            },
+            { $match: matchCondition }
         ]);
         return res.status(201).json({ message: "Blog fetched successfully", data: blogs || [] });
 
