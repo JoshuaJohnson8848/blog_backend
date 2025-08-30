@@ -6,7 +6,9 @@ export const fetchOneUser = async (req, res, next) => {
         const { id } = req.params;
 
         if (!id) {
-            throw new Error("Missing required params");
+            const error = new Error('Missing required field');
+            error.status = 422;
+            throw error;
         }
 
         const user = await User.findById(id).select({
@@ -18,7 +20,9 @@ export const fetchOneUser = async (req, res, next) => {
         });
 
         if (!user) {
-            throw new Error("User not found");
+            const error = new Error('User not found');
+            error.status = 404;
+            throw error;
         }
 
         return res.status(201).json({ message: "User fetched successfully", data: user || {} });
@@ -34,10 +38,12 @@ export const fetchAllUserByType = async (req, res, next) => {
         const { type } = req.query;
 
         if (!type) {
-            throw new Error("Missing required params");
+            const error = new Error('Missing required field');
+            error.status = 422;
+            throw error;
         }
 
-        const users = await User.findOne({ userType: type }).select({
+        const users = await User.find({ userType: type }).select({
             email: 1,
             fullName: 1,
             isActive: 1,
@@ -58,19 +64,25 @@ export const createUser = async (req, res, next) => {
         const { fullName, email, phone, password, isActive, userType } = req.body;
 
         if (!fullName || !email || !phone || !password) {
-            throw new Error("Missing required values");
+            const error = new Error('Missing required field');
+            error.status = 422;
+            throw error;
         }
 
         const existingUser = await User.findOne({ where: { email: email } }).select({ email: 1 });
 
         if (existingUser) {
-            throw new Error("User with the same email already exist");
+            const error = new Error('User with same email already exist');
+            error.status = 422;
+            throw error;
         }
 
         const hashPass = await bcrypt.hash(password, 12);
 
         if (!hashPass) {
-            throw new Error("Password hashing failed");
+            const error = new Error('Password hasing failed');
+            error.status = 422;
+            throw error;
         }
 
         const user = new User({
@@ -85,7 +97,9 @@ export const createUser = async (req, res, next) => {
         const createdUser = await user.save();
 
         if (!createdUser) {
-            throw new Error("User creation failed");
+            const error = new Error('User creation failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(201).json({ message: "User created successfully" });
@@ -104,7 +118,9 @@ export const updateUser = async (req, res, next) => {
         const existingUser = await User.findById(id);
 
         if (!existingUser) {
-            throw new Error("User not found");
+            const error = new Error('User not found');
+            error.status = 404;
+            throw error;
         }
 
         existingUser.fullName = fullName;
@@ -115,7 +131,9 @@ export const updateUser = async (req, res, next) => {
         const updatedUser = await existingUser.save();
 
         if (!updatedUser) {
-            throw new Error("User update failed");
+            const error = new Error('User update failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(200).json({ message: "User updated successfully", data: updatedUser });
@@ -133,13 +151,17 @@ export const deleteUser = async (req, res, next) => {
         const existingUser = await User.findById(id);
 
         if (!existingUser) {
-            throw new Error("User not found");
+            const error = new Error('User not found');
+            error.status = 404;
+            throw error;
         }
 
         const deletedUser = await User.findByIdAndDelete(id);
 
         if (!deletedUser) {
-            throw new Error("User deletion failed");
+            const error = new Error('User deletion failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(200).json({ message: "User deleted successfully" });

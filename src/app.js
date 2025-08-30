@@ -5,6 +5,7 @@ import UserRouter from './routes/user.js'
 import AuthRouter from './routes/auth.js'
 import BlogRouter from './routes/blog.js'
 import CommentRouter from './routes/comments.js'
+import errorMiddleware from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -16,10 +17,12 @@ app.use("/api/auth", AuthRouter);
 app.use("/api/blog", BlogRouter);
 app.use("/api/comment", CommentRouter);
 
+app.use(errorMiddleware);
+
 connectDB().then(() => {
-        app.listen(process.env.PORT, () => {
-            console.log(`Server running at PORT ${process.env.PORT}`)
-        });
-    }).catch((error) => {
-        console.log(`Server Error`);
-    })
+    app.listen(process.env.PORT, () => {
+        console.log(`Server running at PORT ${process.env.PORT}`)
+    });
+}).catch((error) => {
+    console.log(`Server Error`);
+})

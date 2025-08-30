@@ -1,6 +1,6 @@
 import JWT from 'jsonwebtoken';
 
-export const authenticate = async(req, res, next) => {
+export const authenticate = async (req, res, next) => {
   try {
     const authHeader = await req.get('Authorization');
     if (!authHeader) {
@@ -22,7 +22,7 @@ export const authenticate = async(req, res, next) => {
       error.status = 401;
       throw error;
     }
-    
+
     req.userId = decodedToken.userId;
     req.email = decodedToken.email;
     req.role = decodedToken.role;

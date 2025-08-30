@@ -5,7 +5,9 @@ export const fetchOneComment = async (req, res, next) => {
         const { id } = req.params;
 
         if (!id) {
-            throw new Error("Missing required params");
+            const error = new Error('Missing required field');
+            error.status = 422;
+            throw error;
         }
 
         const comment = await Comment.findById(id);
@@ -36,7 +38,9 @@ export const createComment = async (req, res, next) => {
         const { userId: author } = req;
 
         if (comment == "" || !postId) {
-            throw new Error("Missing required values");
+            const error = new Error('Missing required field');
+            error.status = 422;
+            throw error;
         }
 
         const commentData = new Comment({
@@ -48,7 +52,9 @@ export const createComment = async (req, res, next) => {
         const createdComment = await commentData.save();
 
         if (!createdComment) {
-            throw new Error("Comment creation failed");
+            const error = new Error('Comment creation failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(201).json({ message: "Comment created successfully" });
@@ -67,7 +73,9 @@ export const updateComment = async (req, res, next) => {
         const existingComment = await Comment.findById(id);
 
         if (!existingComment) {
-            throw new Error("Comment not found");
+            const error = new Error('Comment not found');
+            error.status = 422;
+            throw error;
         }
 
         existingComment.comment = comment;
@@ -75,7 +83,9 @@ export const updateComment = async (req, res, next) => {
         const updatedComment = await existingComment.save();
 
         if (!updatedComment) {
-            throw new Error("Comment update failed");
+            const error = new Error('Comment update failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(200).json({ message: "Comment updated successfully", data: updateComment });
@@ -93,13 +103,17 @@ export const deleteComment = async (req, res, next) => {
         const existingComment = await Comment.findById(id);
 
         if (!existingComment) {
-            throw new Error("Comment not found");
+            const error = new Error('Comment not found');
+            error.status = 404;
+            throw error;
         }
 
         const deletedComment = await Comment.findByIdAndDelete(id);
 
         if (!deletedComment) {
-            throw new Error("Comment deletion failed");
+            const error = new Error('Comment deletion failed');
+            error.status = 422;
+            throw error;
         }
 
         return res.status(200).json({ message: "Comment deleted successfully" });

@@ -7,7 +7,9 @@ export const signup = async (req, res, next) => {
         const { fullName, email, password } = req.body;
 
         if (!fullName || !email || !password) {
-            throw new Error("Missing required values");
+            const error = new Error('Missing required fields');
+            error.status = 422;
+            throw error;
         }
 
         const existingUser = await User.findOne({ where: { email: email } }).select({ email: 1 });
@@ -19,7 +21,9 @@ export const signup = async (req, res, next) => {
         const hashPass = await bcrypt.hash(password, 12);
 
         if (!hashPass) {
-            throw new Error("Password hashing failed");
+            const error = new Error('Password hashing failed');
+            error.status = 422;
+            throw error;
         }
 
         const user = new User({
@@ -33,10 +37,12 @@ export const signup = async (req, res, next) => {
         const createdUser = await user.save();
 
         if (!createdUser) {
-            throw new Error("User creation failed");
+            const error = new Error('User creation failed');
+            error.status = 422;
+            throw error;
         }
 
-        return res.status(201).json({ message: "User created successfully" });
+        return res.status(201).json({ status: true, message: "User created successfully" });
 
     } catch (error) {
         console.log(error);
@@ -49,19 +55,25 @@ export const login = async (req, res, next) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            throw new Error("Missing required values");
+            const error = new Error('Missing required fields');
+            error.status = 500;
+            throw error;
         }
 
         const existingUser = await User.findOne({ email }).select("+password")
-        
+
         if (!existingUser) {
-            throw new Error("Login Failed");
+            const error = new Error('User not found');
+            error.status = 404;
+            throw error;
         }
 
         const comparePass = await bcrypt.compare(password, existingUser.password);
 
         if (!comparePass) {
-            throw new Error("Incorrect Password");
+            const error = new Error('Invalid Password');
+            error.status = 422;
+            throw error;
         }
 
         const token = JWT.sign(
@@ -70,7 +82,14 @@ export const login = async (req, res, next) => {
             { expiresIn: "7d" }
         )
 
-        return res.status(201).json({ message: "User loggedin successfully", user: existingUser, token: token });
+        let user = {
+            id: existingUser._id,
+            email: existingUser.email,
+            name: existingUser.fullName,
+            role: existingUser.userType
+        }
+
+        return res.status(201).json({ status: true, message: "User loggedin successfully", user: user, token: token });
 
     } catch (error) {
         console.log(error);
